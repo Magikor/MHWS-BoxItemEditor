@@ -49,3 +49,7 @@ reframework
 .temp
 
 .fake
+
+# Python cache
+__pycache__/
+*.pyc

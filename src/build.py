@@ -27,13 +27,13 @@ FMM_CONFIG = {
 LANG_LIST = [
     {
         "tag": "zh-Hans",
-        "item_lang": "SimplifiedChinese",
-        "save_txt_header": ["[物品ID]", "[物品名]"],
+        "item_lang": "English",
+        "save_txt_header": ["[Item ID]", "[Item Name]"],
     },
     {
         "tag": "zh-Hant",
-        "item_lang": "TraditionalChinese",
-        "save_txt_header": ["[物品ID]", "[物品名]"],
+        "item_lang": "English",
+        "save_txt_header": ["[Item ID]", "[Item Name]"],
     },
     {
         "tag": "en-US",
@@ -42,13 +42,13 @@ LANG_LIST = [
     },
     {
         "tag": "ja-JP",
-        "item_lang": "Japanese",
-        "save_txt_header": ["[アイテムID]", "[アイテム名]"],
+        "item_lang": "English",
+        "save_txt_header": ["[Item ID]", "[Item Name]"],
     },
     {
         "tag": "ko-KR",
-        "item_lang": "Korean",
-        "save_txt_header": ["[아이템ID]", "[아이템명]"],
+        "item_lang": "English",
+        "save_txt_header": ["[Item ID]", "[Item Name]"],
     },
 ]
 

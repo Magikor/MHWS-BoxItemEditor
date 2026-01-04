@@ -901,14 +901,10 @@ local function modInitalize()
 end
 
 local function onStartPlayable()
-    local get_text_language = sdk.find_type_definition("app.OptionUtil"):get_method("getTextLanguage()")
-    local default_lang = tostring(get_text_language(nil))
-    if LANG_DICT[default_lang] ~= nil then
-        userLanguage = LANG_DICT[default_lang]
-    else
-        userLanguage = "en-US" -- Default to English if language not found
-    end
-    print("Default Language: " .. default_lang .. " - User Language: " .. userLanguage)
+    -- Force English so UI + item names stay consistent in English.
+    -- (Game text language can still be non-English; we intentionally ignore it here.)
+    userLanguage = "en-US"
+    print("User Language forced to: " .. userLanguage)
 
     modInitalize()
     isLoadLanguage = true
