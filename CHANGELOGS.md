@@ -1,2 +1,2 @@
-1. 更新以支持游戏版本v1.40.2.0 (需要REF版本大于等于Nightly 1207)
-2. 添加了字体大小跟随REF UI设置的功能，related to #18
+1. Updated to support game version v1.40.2.0 (requires REFramework version >= Nightly 1207)
+2. Added support for font size following REFramework UI settings, related to #18

@@ -14,9 +14,9 @@
 </div>
 
 > [!CAUTION]
-> Please backup your save before using! / 警告：使用前请备份存档！
+> Please backup your save before using!
 
-A mod of `Monster Hunter Wilds` for editing the itembox. / 用于`怪物猎人：荒野`的道具箱编辑器。
+A mod of `Monster Hunter Wilds` for editing the Item Box.
 
 ---
 
@@ -33,21 +33,6 @@ A mod of `Monster Hunter Wilds` for editing the itembox. / 用于`怪物猎人�
 2. Download the mod;
 3. Unzip the mod to the Monster Hunter Wilds root directory. So the final directory seems like
    `./reframework/autorun/ItemBoxEditor_EN-US.lua`.
-
----
-
-## 前置：
-- [REFramework](https://github.com/praydog/REFramework/releases)
-
-## MOD下载:
-
-[https://github.com/dzxrly/MHWS-BoxItemEditor/releases/](https://github.com/dzxrly/MHWS-BoxItemEditor/releases/)
-
-## 安装方式：
-
-1. 安装[REFramework](https://www.nexusmods.com/monsterhunterwilds/mods/93)；
-2. 下载MOD；
-3. 将MOD解压缩后存放至Monster Hunter Wilds根目录，即`./reframework/autorun/ItemBoxEditor_ZH-Hans.lua`。
 
 <div align="center">
 
