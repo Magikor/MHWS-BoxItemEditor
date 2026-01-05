@@ -26,6 +26,14 @@ local CHECKED_COLOR = 0xff74ff33
 local TIPS_COLOR = 0xff00c3ff
 local GAME_VER = nil
 local MAX_VER_LT_OR_EQ_GAME_VER = true
+local mhwsEditorAutoLaunchDone = false
+
+local MHWS_EDITOR_CANDIDATE_PATHS = {
+    "MHWS-Editor.exe",
+    "MHWS-Editor/MHWS-Editor.exe",
+    "reframework/MHWS-Editor.exe",
+    "reframework/MHWS-Editor/MHWS-Editor.exe",
+}
 local LANG_DICT = {}
 LANG_DICT["0"] = "ja-JP"    -- Japanese
 LANG_DICT["1"] = "en-US"    -- English
@@ -145,6 +153,33 @@ local function clear()
     hunterNameResetBtnEnabled = false
     otomoNameInputChanged = nil
     otomoNameResetBtnEnabled = false
+end
+
+local function tryLaunchMHWSEditor()
+    if mhwsEditorAutoLaunchDone then
+        return
+    end
+    mhwsEditorAutoLaunchDone = true
+
+    local editorExePath = nil
+    for _, candidatePath in ipairs(MHWS_EDITOR_CANDIDATE_PATHS) do
+        local f = io.open(candidatePath, "rb")
+        if f ~= nil then
+            f:close()
+            editorExePath = candidatePath
+            break
+        end
+    end
+
+    if editorExePath == nil then
+        print("[Item Box Editor] MHWS-Editor.exe not found; skipping auto-launch.")
+        return
+    end
+
+    editorExePath = editorExePath:gsub("/", "\\")
+    local cmd = string.format('start "" "%s"', editorExePath)
+    os.execute(cmd)
+    print("[Item Box Editor] Launched MHWS-Editor: " .. editorExePath)
 end
 
 local function getVersion()
@@ -875,7 +910,7 @@ end
 local function modInitalize()
     print("Initializing ItemBoxEditor...")
     isInitError = false
-    initErrorMsg = nil
+    initErrorMsg = ""
 
     local function initStep(stepFn, ...)
         local ok, err = pcall(stepFn, ...)
@@ -907,7 +942,10 @@ local function onStartPlayable()
     print("User Language forced to: " .. userLanguage)
 
     modInitalize()
-    isLoadLanguage = true
+    isLoadLanguage = (not isInitError) and (i18n ~= nil) and (itemNameJson ~= nil)
+
+    -- Launch MHWS-Editor once REFramework/mod is loaded.
+    tryLaunchMHWSEditor()
 end
 
 local function notTitleScreen()
@@ -941,7 +979,7 @@ end, function()
     end
 end)
 
-re.on_draw_ui(function()
+local function drawItemBoxEditorTree()
     local mainWindowChanged = false
     local itemWindowChanged = false
 
@@ -973,19 +1011,29 @@ re.on_draw_ui(function()
         end
         imgui.tree_pop()
     end
-end)
+end
 
-re.on_frame(function()
+local function onFrameItemBoxEditor()
     local ref_font = imgui.load_font(nil, imgui.get_default_font_size())
 
     imgui.push_font(ref_font)
 
     -- only display the window when REFramework is actually drawing its own UI
-    if reframework:is_drawing_ui() and isLoadLanguage then
+    if reframework:is_drawing_ui() and isLoadLanguage and (not isInitError) and (i18n ~= nil) then
         mainWindow()
         itemTableWindow()
         aboutWindow()
     end
 
     imgui.pop_font(ref_font)
-end)
+end
+
+_G.__MHWS_EDITOR_SUITE = _G.__MHWS_EDITOR_SUITE or {}
+_G.__MHWS_EDITOR_SUITE.draw_item_box_editor = drawItemBoxEditorTree
+_G.__MHWS_EDITOR_SUITE.on_frame_item_box_editor = onFrameItemBoxEditor
+
+local runningInSuite = rawget(_G, "__MHWS_EDITOR_SUITE_ACTIVE") == true
+if not runningInSuite then
+    re.on_draw_ui(drawItemBoxEditorTree)
+    re.on_frame(onFrameItemBoxEditor)
+end
