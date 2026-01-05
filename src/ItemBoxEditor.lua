@@ -161,11 +161,39 @@ local function tryLaunchMHWSEditor()
     end
     mhwsEditorAutoLaunchDone = true
 
+    -- Prefer native plugin if present (works under ScriptRunner sandbox).
+    do
+        local tools = rawget(_G, "mhws_tools")
+        if tools ~= nil and type(tools) == "table" and tools.launch_mhws_editor ~= nil then
+            local ok_call, res = pcall(function()
+                return tools.launch_mhws_editor()
+            end)
+            if ok_call and res ~= nil and res.ok == true then
+                print("[Item Box Editor] Launched MHWS-Editor (plugin): " .. tostring(res.detail))
+                return
+            end
+        end
+    end
+
+    local function fileExists(path)
+        path = tostring(path):gsub("/", "\\")
+        local ok, exists = pcall(function()
+            local renamed, err = os.rename(path, path)
+            if renamed then
+                return true
+            end
+            err = tostring(err or "")
+            if err:match("Permission") or err:match("permission") then
+                return true
+            end
+            return false
+        end)
+        return ok and exists == true
+    end
+
     local editorExePath = nil
     for _, candidatePath in ipairs(MHWS_EDITOR_CANDIDATE_PATHS) do
-        local f = io.open(candidatePath, "rb")
-        if f ~= nil then
-            f:close()
+        if fileExists(candidatePath) then
             editorExePath = candidatePath
             break
         end
@@ -178,8 +206,14 @@ local function tryLaunchMHWSEditor()
 
     editorExePath = editorExePath:gsub("/", "\\")
     local cmd = string.format('start "" "%s"', editorExePath)
-    os.execute(cmd)
-    print("[Item Box Editor] Launched MHWS-Editor: " .. editorExePath)
+    local ok_exec, exec_err = pcall(function()
+        os.execute(cmd)
+    end)
+    if ok_exec then
+        print("[Item Box Editor] Launched MHWS-Editor: " .. editorExePath)
+    else
+        print("[Item Box Editor] MHWS-Editor launch blocked/failed: " .. tostring(exec_err))
+    end
 end
 
 local function getVersion()
