@@ -111,9 +111,13 @@ local function tryLaunchExe(candidates)
             local ok_call, res = pcall(function()
                 return tools.launch_re_editor()
             end)
-            if ok_call and res ~= nil and res.ok == true then
-                return true, res.detail
+            if ok_call and res ~= nil then
+                if res.ok == true then
+                    return true, res.detail
+                end
+                return false, res.detail or "launch_re_editor failed"
             end
+            return false, "launch_re_editor threw an error"
         end
     end
 
@@ -191,7 +195,10 @@ suite.Menu(function()
                 if okLaunch then
                     launchState.re_editor = string.format("Launched: %s", detail)
                 else
-                    launchState.re_editor = "RE-Editor.exe not found. Put it in the game folder as RE-Editor/RE-Editor.exe or RE-Editor.exe"
+                    launchState.re_editor = string.format(
+                        "Launch failed: %s\nExpected: RE-Editor/RE-Editor.exe or RE-Editor.exe",
+                        tostring(detail)
+                    )
                 end
             end
 
@@ -202,6 +209,9 @@ suite.Menu(function()
 
         Imgui.Tree("Diagnostics", function()
             local lastError = api._last_error
+
+            local tools = rawget(_G, "mhws_tools")
+            imgui.text(string.format("mhws_tools plugin loaded: %s", (tools ~= nil and type(tools) == "table") and "yes" or "no"))
 
             imgui.text("REFramework log files:")
             if imgui.button("Open reframework/log.txt") then
