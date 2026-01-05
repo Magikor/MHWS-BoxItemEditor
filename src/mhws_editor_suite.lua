@@ -81,10 +81,18 @@ local function findFirstExistingPath(candidates)
                 return true
             end
             err = tostring(err or "")
-            if err:match("Permission") or err:match("permission") then
+            local lower = err:lower()
+            -- Many Windows setups return errors even when the file exists (e.g. access denied,
+            -- file in use, permission issues). Treat those as "exists".
+            if lower:find("permission") or lower:find("access") or lower:find("denied") or lower:find("used") then
                 return true
             end
-            return false
+            -- Only treat clear "missing" errors as non-existent.
+            if lower:find("no such file") or lower:find("cannot find") or lower:find("not found") then
+                return false
+            end
+            -- Unknown error: assume it exists to avoid false negatives.
+            return true
         end)
         if ok and exists == true then
             return candidatePath
@@ -99,12 +107,29 @@ local function tryLaunchExe(candidates)
     if tools ~= nil and type(tools) == "table" then
         -- Only expose explicit actions, not arbitrary process launch.
         local isRe = false
+        local isMhwsEditor = false
         for _, p in ipairs(candidates) do
             local s = tostring(p):lower()
             if s:find("re%-editor%.exe") or s:find("re%-editor\\re%-editor%.exe") then
                 isRe = true
                 break
             end
+            if s:find("mhws%-editor%.exe") or s:find("mhws%-editor\\mhws%-editor%.exe") then
+                isMhwsEditor = true
+            end
+        end
+
+        if isMhwsEditor and tools.launch_mhws_editor ~= nil then
+            local ok_call, res = pcall(function()
+                return tools.launch_mhws_editor()
+            end)
+            if ok_call and res ~= nil then
+                if res.ok == true then
+                    return true, res.detail
+                end
+                return false, res.detail or "launch_mhws_editor failed"
+            end
+            return false, "launch_mhws_editor threw an error"
         end
 
         if isRe and tools.launch_re_editor ~= nil then
@@ -187,16 +212,18 @@ suite.Menu(function()
         end)
 
         Imgui.Tree("RE-Editor", function()
-            if imgui.button("Launch RE-Editor") then
+            imgui.text("For MHWS, RE-Editor builds as MHWS-Editor.")
+            if imgui.button("Launch MHWS-Editor (RE-Editor)") then
                 local okLaunch, detail = tryLaunchExe({
-                    "RE-Editor/RE-Editor.exe",
-                    "RE-Editor.exe",
+                    "MHWS-Editor/MHWS-Editor.exe",
+                    "RE-Editor/MHWS-Editor.exe",
+                    "MHWS-Editor.exe",
                 })
                 if okLaunch then
                     launchState.re_editor = string.format("Launched: %s", detail)
                 else
                     launchState.re_editor = string.format(
-                        "Launch failed: %s\nExpected: RE-Editor/RE-Editor.exe or RE-Editor.exe",
+                        "Launch failed: %s\nExpected: MHWS-Editor/MHWS-Editor.exe (or RE-Editor/MHWS-Editor.exe)",
                         tostring(detail)
                     )
                 end

@@ -2,6 +2,11 @@
 -- MIT License
 -- For Monster Hunter: Wilds
 -- !!! DO NOT MODIFY THE FOLLOWING CODE !!!
+if rawget(_G, "__MHWS_ITEM_BOX_EDITOR_LOADED") == true then
+    return
+end
+_G.__MHWS_ITEM_BOX_EDITOR_LOADED = true
+
 local ITEM_NAME_JSON_PATH = ""
 local USER_CONFIG_PATH = ""
 local ITEM_ID_MAX = 974 -- app.ItemDef.ID.Max

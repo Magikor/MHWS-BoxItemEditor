@@ -1,3 +1,8 @@
+if rawget(_G, "__MHWS_ITEM_EDITOR_LOADED") == true then
+    return
+end
+_G.__MHWS_ITEM_EDITOR_LOADED = true
+
 local re = re
 local sdk = sdk
 local d2d = d2d
