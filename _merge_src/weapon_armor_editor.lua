@@ -136,6 +136,41 @@ local function DrawWeaponArmorEditorMenu()
         return
     end
 
+    -- UI filters (helps with massive weapon/armor lists)
+    EditorConf.Config.UI = EditorConf.Config.UI or {
+        weaponFilter = "",
+        armorFilter = "",
+        weaponOnlyCustom = false,
+        armorOnlyCustom = false,
+    }
+    local ui = EditorConf.Config.UI
+
+    Imgui.Tree("UI Filters", function()
+        imgui.push_item_width(260)
+        changed, ui.weaponFilter = imgui.input_text("Search Weapons (name/id)##WeaponFilter", ui.weaponFilter)
+        imgui.pop_item_width()
+        configChanged = configChanged or changed
+        imgui.same_line()
+        if imgui.button("Clear##ClearWeaponFilter") then
+            ui.weaponFilter = ""
+            configChanged = true
+        end
+        changed, ui.weaponOnlyCustom = imgui.checkbox("Weapons: only custom", ui.weaponOnlyCustom)
+        configChanged = configChanged or changed
+
+        imgui.push_item_width(260)
+        changed, ui.armorFilter = imgui.input_text("Search Armors (name/id)##ArmorFilter", ui.armorFilter)
+        imgui.pop_item_width()
+        configChanged = configChanged or changed
+        imgui.same_line()
+        if imgui.button("Clear##ClearArmorFilter") then
+            ui.armorFilter = ""
+            configChanged = true
+        end
+        changed, ui.armorOnlyCustom = imgui.checkbox("Armors: only custom", ui.armorOnlyCustom)
+        configChanged = configChanged or changed
+    end)
+
     Imgui.Tree("Clear Data", function ()
         Imgui.Button("Clear Weapon Data", function ()
             EditorConf.ClearWeaponData()
@@ -215,6 +250,17 @@ local function DrawWeaponArmorEditorMenu()
         Core.ForEachDict(armorData, function (series, armorSet)
             local name = ArmorSeriesNames[series]
             if name then
+                local seriesMatches = true
+                local q = tostring((EditorConf.Config.UI and EditorConf.Config.UI.armorFilter) or "")
+                if q ~= "" then
+                    local qLower = q:lower()
+                    local label = string.format("[%d] %s", name.Index, name.Name)
+                    seriesMatches = label:lower():find(qLower, 1, true) ~= nil or tostring(series):find(q, 1, true) ~= nil
+                end
+                if not seriesMatches then
+                    return
+                end
+
                 Imgui.Tree(string.format("[%d] %s", name.Index, name.Name), function ()
                     changed = Editor.InspectArmorData(armorSet:get_Helm())
                     configChanged = configChanged or changed

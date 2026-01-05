@@ -267,6 +267,27 @@ function _M.InspectWeaponData(data, arrIdx, wpType)
         EditorConf.Config.Weapons[wpTypeStr] = {}
     end
 
+    -- UI filters (optional)
+    local ui = EditorConf.Config.UI or {}
+    do
+        local q = tostring(ui.weaponFilter or "")
+        if q ~= "" then
+            local qLower = q:lower()
+            local label = string.format("[%d] %s", index, tostring(name))
+            local matches = label:lower():find(qLower, 1, true) ~= nil or tostring(index):find(q, 1, true) ~= nil
+            if not matches then
+                return false
+            end
+        end
+
+        if ui.weaponOnlyCustom == true then
+            local existing = EditorConf.Config.Weapons[wpTypeStr][indexStr]
+            if existing == nil or existing.IsUsingCustomValues ~= true then
+                return false
+            end
+        end
+    end
+
     local conf = Utils.MergeTablesRecursive(EditorUtils.WeaponConfigFromData(data), EditorConf.Config.Weapons[wpTypeStr][indexStr])
     EditorConf.Config.Weapons[wpTypeStr][indexStr] = conf
 
@@ -437,6 +458,27 @@ function _M.InspectArmorData(data)
     local changed = false
 
     local indexStr = tostring(index)
+
+    -- UI filters (optional)
+    local ui = EditorConf.Config.UI or {}
+    do
+        local q = tostring(ui.armorFilter or "")
+        if q ~= "" then
+            local qLower = q:lower()
+            local label = string.format("[%d] %s", index, tostring(name))
+            local matches = label:lower():find(qLower, 1, true) ~= nil or tostring(index):find(q, 1, true) ~= nil
+            if not matches then
+                return false
+            end
+        end
+
+        if ui.armorOnlyCustom == true then
+            local existing = EditorConf.Config.Armors[indexStr]
+            if existing == nil or existing.IsUsingCustomValues ~= true then
+                return false
+            end
+        end
+    end
 
     local conf = Utils.MergeTablesRecursive(EditorUtils.ArmorConfigFromData(data), EditorConf.Config.Armors[indexStr])
 

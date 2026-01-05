@@ -355,7 +355,7 @@ local function loadI18NJson(jsonPath)
                 return a._SortId < b._SortId
             end)
         else
-            error("Error: Cannot load i18n json file")
+            error("Error: Cannot load i18n json file: " .. tostring(jsonPath) .. " (expected under reframework/data)")
         end
     else
         error("Error: Cannot load json lib")
@@ -857,7 +857,17 @@ local function itemTableWindow()
             searchItemResult = searchItemList(searchItemTarget)
         end
 
-        imgui.begin_table('table', 2, 17) -- 17 is ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings
+        if searchItemResult ~= nil then
+            imgui.text(string.format("%s: %d", i18n.searchBtn, #searchItemResult))
+        end
+
+        -- Prefer adding ScrollY if the constant exists; otherwise keep legacy flags.
+        local tableFlags = 17 -- ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings
+        if _G.ImGuiTableFlags_ScrollY ~= nil then
+            -- Most Lua builds expose these flags as globals.
+            tableFlags = tableFlags + _G.ImGuiTableFlags_ScrollY
+        end
+        imgui.begin_table('table', 2, tableFlags)
 
         imgui.table_setup_column('', 0, 1)
         imgui.table_setup_column('', 0, 2)
@@ -950,6 +960,15 @@ local function modInitalize()
     print("Initializing ItemBoxEditor...")
     isInitError = false
     initErrorMsg = ""
+
+    -- In release builds, these placeholders are replaced by src/build.py.
+    -- When running the raw src Lua directly (e.g. copied into autorun), fall back to the release defaults.
+    if ITEM_NAME_JSON_PATH == nil or ITEM_NAME_JSON_PATH == "" then
+        ITEM_NAME_JSON_PATH = "ItemBoxEditor/ItemBoxEditor.json"
+    end
+    if USER_CONFIG_PATH == nil or USER_CONFIG_PATH == "" then
+        USER_CONFIG_PATH = "ItemBoxEditor/UserConfig.json"
+    end
 
     local function initStep(stepFn, ...)
         local ok, err = pcall(stepFn, ...)

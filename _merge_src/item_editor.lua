@@ -740,6 +740,21 @@ local function DrawItemEditorMenu()
 	local configChanged = false
     local changed = false
 
+    -- UI state (search/filter helpers)
+    mod.Config.EditorConf = mod.Config.EditorConf or {}
+    if mod.Config.EditorConf.SearchText == nil then
+        mod.Config.EditorConf.SearchText = ""
+    end
+    if mod.Config.EditorConf.ListSearchText == nil then
+        mod.Config.EditorConf.ListSearchText = ""
+    end
+    if mod.Config.EditorConf.ListOnlyNonZero == nil then
+        mod.Config.EditorConf.ListOnlyNonZero = false
+    end
+    if mod.Config.EditorConf.ListMaxRows == nil then
+        mod.Config.EditorConf.ListMaxRows = 200
+    end
+
     imgui.text("")
     imgui.text("Stats Add")
 
@@ -799,6 +814,17 @@ local function DrawItemEditorMenu()
     changed, mod.Config.EditorConf.FilterID = imgui.combo("Filter Type##ItemFilterType", mod.Config.EditorConf.FilterID, FilterType)
     configChanged = configChanged or changed
 
+    -- Search within the currently selected filter (works around huge combo lists)
+    imgui.push_item_width(260)
+    changed, mod.Config.EditorConf.SearchText = imgui.input_text("Search (name/id)##ItemSearch", mod.Config.EditorConf.SearchText)
+    imgui.pop_item_width()
+    configChanged = configChanged or changed
+    imgui.same_line()
+    if imgui.button("Clear##ClearItemSearch") then
+        mod.Config.EditorConf.SearchText = ""
+        configChanged = true
+    end
+
     ---@type EditorItemTable
     local itemTable
     if mod.Config.EditorConf.FilterID == 1 then
@@ -836,14 +862,41 @@ local function DrawItemEditorMenu()
 
     local selectedItemID = nil
     if itemTable then
-        if #itemTable.SortedItemNameArray == 0 then
+        local nameArray = itemTable.SortedItemNameArray
+        local idArray = itemTable.SortedItemIDArray
+
+        local searchText = tostring(mod.Config.EditorConf.SearchText or "")
+        if searchText ~= "" then
+            local q = searchText:lower()
+            local filteredNames = {}
+            local filteredIds = {}
+            for i = 1, #nameArray do
+                local n = tostring(nameArray[i])
+                local id = idArray[i]
+                if n:lower():find(q, 1, true) or tostring(id):find(searchText, 1, true) then
+                    filteredNames[#filteredNames + 1] = nameArray[i]
+                    filteredIds[#filteredIds + 1] = id
+                end
+            end
+            nameArray = filteredNames
+            idArray = filteredIds
+        end
+
+        if #nameArray == 0 then
             imgui.text("This filter has no items")
             selectedItemID = nil
         else
-            changed, mod.Config.EditorConf.ItemIDIndex = imgui.combo("Item", mod.Config.EditorConf.ItemIDIndex, itemTable.SortedItemNameArray)
+            if mod.Config.EditorConf.ItemIDIndex == nil or mod.Config.EditorConf.ItemIDIndex < 1 then
+                mod.Config.EditorConf.ItemIDIndex = 1
+            end
+            if mod.Config.EditorConf.ItemIDIndex > #nameArray then
+                mod.Config.EditorConf.ItemIDIndex = 1
+            end
+
+            changed, mod.Config.EditorConf.ItemIDIndex = imgui.combo("Item", mod.Config.EditorConf.ItemIDIndex, nameArray)
             configChanged = configChanged or changed
 
-            selectedItemID = itemTable.SortedItemIDArray[mod.Config.EditorConf.ItemIDIndex]
+            selectedItemID = idArray[mod.Config.EditorConf.ItemIDIndex]
         end
     else
         imgui.text("This filter has no items")
@@ -984,6 +1037,22 @@ local function DrawItemEditorMenu()
 
     if itemTable then
         Imgui.Tree("Show All Filtered Items in Item Box", function ()
+            imgui.push_item_width(260)
+            changed, mod.Config.EditorConf.ListSearchText = imgui.input_text("Search in list##ListSearch", mod.Config.EditorConf.ListSearchText)
+            imgui.pop_item_width()
+            configChanged = configChanged or changed
+            imgui.same_line()
+            if imgui.button("Clear##ClearListSearch") then
+                mod.Config.EditorConf.ListSearchText = ""
+                configChanged = true
+            end
+
+            changed, mod.Config.EditorConf.ListOnlyNonZero = imgui.checkbox("Only show items you have", mod.Config.EditorConf.ListOnlyNonZero)
+            configChanged = configChanged or changed
+
+            changed, mod.Config.EditorConf.ListMaxRows = imgui.slider_int("Max rows##ListMaxRows", mod.Config.EditorConf.ListMaxRows, 50, 1000)
+            configChanged = configChanged or changed
+
             local clicked = imgui.button("Add to All Listed Items")
             imgui.same_line()
             _, numStrBatchAdd = imgui.input_text("Batch Add Number", numStrBatchAdd)
@@ -997,7 +1066,15 @@ local function DrawItemEditorMenu()
                 end
             end
     
+            local q = tostring(mod.Config.EditorConf.ListSearchText or "")
+            local qLower = q:lower()
+            local shown = 0
+            local maxRows = tonumber(mod.Config.EditorConf.ListMaxRows) or 200
             for _, id in pairs(itemTable.SortedItemIDArray)  do
+                if shown >= maxRows then
+                    imgui.text(string.format("Showing first %d rows. Refine search to see more.", maxRows))
+                    break
+                end
                 local data = itemTable.DataMap[id]
                 if data then
                     local num = GetItemBoxItemCount(id)
@@ -1005,6 +1082,17 @@ local function DrawItemEditorMenu()
                     local max = num + capactiy
                 
                     local isInf = IsInfinity(id) 
+
+                    if mod.Config.EditorConf.ListOnlyNonZero and num <= 0 and not isInf then
+                        goto continue_list
+                    end
+
+                    if q ~= "" then
+                        local raw = tostring(data.RawName or "")
+                        if (not raw:lower():find(qLower, 1, true)) and (not tostring(id):find(q, 1, true)) then
+                            goto continue_list
+                        end
+                    end
 
                     imgui.text(string.format("%s", data.RawName))
 
@@ -1020,7 +1108,11 @@ local function DrawItemEditorMenu()
                         RequestItemID = id
                         RequestCount = delta
                     end
+
+                    shown = shown + 1
                 end
+
+                ::continue_list::
             end
         end)
     end
