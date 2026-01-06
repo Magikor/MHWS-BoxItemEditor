@@ -71,6 +71,7 @@ end
 pcall(require, "item_editor")
 pcall(require, "weapon_armor_editor")
 pcall(require, "ItemBoxEditor")
+pcall(require, "max_slots_skills")
 
 local function findFirstExistingPath(candidates)
     for _, candidatePath in ipairs(candidates) do
@@ -208,6 +209,18 @@ suite.Menu(function()
                 end
             else
                 imgui.text("weapon_armor_editor not loaded yet...")
+            end
+        end)
+
+        Imgui.Tree("Max Slots And Skills", function()
+            if api.draw_max_slots_skills ~= nil then
+                local ok_draw, err = xpcall(api.draw_max_slots_skills, debug.traceback)
+                if not ok_draw and api.record_error ~= nil then
+                    api.record_error("suite:draw_max_slots_skills", err)
+                    imgui.text("Error captured (see Diagnostics).")
+                end
+            else
+                imgui.text("max_slots_skills not loaded yet...")
             end
         end)
 

@@ -1,7 +1,6 @@
 import argparse
 import csv
 import json
-import os
 import shutil
 from pathlib import Path
 
@@ -188,6 +187,32 @@ def main() -> int:
     # Some installs/scripts reference a lowercase filename.
     (out_autorun / "itemboxeditor.lua").write_text(lua_release, encoding="utf-8")
 
+    # Package suite + merged modules (kept outside src/ItemBoxEditor.lua build).
+    # This mirrors the manual copy pattern: modules in autorun/ are require()-able.
+    suite_files = [
+        repo_root / "src" / "00_mhws_editor_suite.lua",
+        repo_root / "src" / "mhws_editor_suite.lua",
+    ]
+    merge_files = [
+        repo_root / "_merge_src" / "item_editor.lua",
+        repo_root / "_merge_src" / "weapon_armor_editor.lua",
+        repo_root / "_merge_src" / "max_slots_skills.lua",
+    ]
+    merge_dirs = [
+        repo_root / "_merge_src" / "weapon_armor_editor",
+    ]
+
+    for path in suite_files + merge_files:
+        if path.exists():
+            shutil.copy2(path, out_autorun / path.name)
+
+    for path in merge_dirs:
+        if path.exists() and path.is_dir():
+            dest = out_autorun / path.name
+            if dest.exists():
+                shutil.rmtree(dest)
+            shutil.copytree(path, dest)
+
     if args.deploy_game_root:
         game_root = Path(args.deploy_game_root).resolve()
         rf_root = game_root / "reframework"
@@ -205,6 +230,25 @@ def main() -> int:
         shutil.copy2(out_autorun / "itemboxeditor.lua", dest_autorun / "itemboxeditor.lua")
         shutil.copy2(out_data / "ItemBoxEditor.json", dest_data / "ItemBoxEditor.json")
 
+        # Deploy suite + merged modules if present in out_autorun
+        for name in [
+            "00_mhws_editor_suite.lua",
+            "mhws_editor_suite.lua",
+            "item_editor.lua",
+            "weapon_armor_editor.lua",
+            "max_slots_skills.lua",
+        ]:
+            src = out_autorun / name
+            if src.exists():
+                shutil.copy2(src, dest_autorun / name)
+
+        src_dir = out_autorun / "weapon_armor_editor"
+        if src_dir.exists() and src_dir.is_dir():
+            dest_dir = dest_autorun / "weapon_armor_editor"
+            if dest_dir.exists():
+                shutil.rmtree(dest_dir)
+            shutil.copytree(src_dir, dest_dir)
+
         print(f"Deployed: {dest_autorun / 'ItemBoxEditor.lua'}")
         print(f"Deployed: {dest_autorun / 'itemboxeditor.lua'}")
         print(f"Deployed: {dest_data / 'ItemBoxEditor.json'}")
@@ -212,6 +256,19 @@ def main() -> int:
         print(f"Built: {out_autorun / 'ItemBoxEditor.lua'}")
         print(f"Built: {out_autorun / 'itemboxeditor.lua'}")
         print(f"Built: {out_data / 'ItemBoxEditor.json'}")
+
+        # Helpful visibility for suite packaging
+        for name in [
+            "00_mhws_editor_suite.lua",
+            "mhws_editor_suite.lua",
+            "item_editor.lua",
+            "weapon_armor_editor.lua",
+            "max_slots_skills.lua",
+            "weapon_armor_editor",
+        ]:
+            p = out_autorun / name
+            if p.exists():
+                print(f"Built: {p}")
 
     return 0
 
