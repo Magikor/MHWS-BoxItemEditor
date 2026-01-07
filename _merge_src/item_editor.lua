@@ -702,7 +702,9 @@ local function AccessoryEditor()
         end
 
         imgui.text("")
-        Imgui.Tree("Decoration Box", function ()
+        local api = rawget(_G, "__MHWS_EDITOR_SUITE") or {}
+        local Tree = api.safe_tree or Imgui.Tree
+        Tree("Decoration Box", function ()
             Core.ForEach(box, function (work)
                 local num = work.Num
                 if num <= 0 then
@@ -1036,7 +1038,9 @@ local function DrawItemEditorMenu()
     end
 
     if itemTable then
-        Imgui.Tree("Show All Filtered Items in Item Box", function ()
+        local api = rawget(_G, "__MHWS_EDITOR_SUITE") or {}
+        local Tree = api.safe_tree or Imgui.Tree
+        Tree("Show All Filtered Items in Item Box", function ()
             imgui.push_item_width(260)
             changed, mod.Config.EditorConf.ListSearchText = imgui.input_text("Search in list##ListSearch", mod.Config.EditorConf.ListSearchText)
             imgui.pop_item_width()

@@ -17,6 +17,7 @@ do
     local api = _G.__MHWS_EDITOR_SUITE
     api._error_log_path = api._error_log_path or "reframework\\autorun\\mhws_errors.log"
     api._last_error = api._last_error or nil
+    api._status = api._status or {}
 
     local function setClipboardText(text)
         if imgui ~= nil and imgui.set_clipboard_text ~= nil then
@@ -63,6 +64,39 @@ do
     end
 
     api.record_error = recordError
+
+    api.safe_ui = api.safe_ui or function(where, fn)
+        local ok, res = xpcall(fn, debug.traceback)
+        if not ok and api.record_error ~= nil then
+            api.record_error(where, res)
+        end
+        return ok, res
+    end
+
+    api.safe_tree = api.safe_tree or function(label, fn)
+        if imgui == nil or imgui.tree_node == nil or imgui.tree_pop == nil then
+            return
+        end
+
+        if imgui.tree_node(label) then
+            if fn ~= nil then
+                api.safe_ui("tree:" .. tostring(label), fn)
+            end
+            imgui.tree_pop()
+        end
+    end
+
+    api.set_status = api.set_status or function(key, ok, msg)
+        api._status[tostring(key or "")] = (ok and "OK: " or "ERR: ") .. tostring(msg)
+    end
+
+    api.draw_status = api.draw_status or function(key)
+        local s = api._status[tostring(key or "")]
+        if s ~= nil and imgui ~= nil and imgui.text_wrapped ~= nil then
+            imgui.text_wrapped(s)
+        end
+    end
+
     api.set_clipboard_text = api.set_clipboard_text or setClipboardText
     api.append_to_file = api.append_to_file or appendToFile
     _G.__MHWS_LOG_ERROR = recordError
@@ -172,7 +206,7 @@ suite.Menu(function()
         local launchState = api._launch_state or {}
         api._launch_state = launchState
 
-        Imgui.Tree("Item Box Editor", function()
+        api.safe_tree("Item Box Editor", function()
             if api.draw_item_box_editor ~= nil then
                 local ok_draw, err = xpcall(api.draw_item_box_editor, debug.traceback)
                 if not ok_draw and api.record_error ~= nil then
@@ -184,7 +218,7 @@ suite.Menu(function()
             end
         end)
 
-        Imgui.Tree("Item Editor", function()
+        api.safe_tree("Item Editor", function()
             if api.draw_item_editor ~= nil then
                 local ok_draw, changedOrErr = xpcall(api.draw_item_editor, debug.traceback)
                 if ok_draw then
@@ -198,7 +232,7 @@ suite.Menu(function()
             end
         end)
 
-        Imgui.Tree("Weapon And Armor Editor", function()
+        api.safe_tree("Weapon And Armor Editor", function()
             if api.draw_weapon_armor_editor ~= nil then
                 local ok_draw, changedOrErr = xpcall(api.draw_weapon_armor_editor, debug.traceback)
                 if ok_draw then
@@ -212,7 +246,7 @@ suite.Menu(function()
             end
         end)
 
-        Imgui.Tree("Max Slots And Skills", function()
+        api.safe_tree("Max Slots And Skills", function()
             if api.draw_max_slots_skills ~= nil then
                 local ok_draw, err = xpcall(api.draw_max_slots_skills, debug.traceback)
                 if not ok_draw and api.record_error ~= nil then
@@ -224,7 +258,7 @@ suite.Menu(function()
             end
         end)
 
-        Imgui.Tree("RE-Editor", function()
+        api.safe_tree("RE-Editor", function()
             imgui.text("For MHWS, RE-Editor builds as MHWS-Editor.")
             if imgui.button("Launch MHWS-Editor (RE-Editor)") then
                 local okLaunch, detail = tryLaunchExe({
@@ -247,7 +281,57 @@ suite.Menu(function()
             end
         end)
 
-        Imgui.Tree("Diagnostics", function()
+        api.safe_tree("ree-pak-gui", function()
+            imgui.text("Optional helper UI (Tauri app).")
+            local toolsState = api._external_tools_state or {}
+            api._external_tools_state = toolsState
+            toolsState.ree_pak_gui_exe = tostring(toolsState.ree_pak_gui_exe or "")
+
+            imgui.text("Exe path (optional):")
+            local changedExe, newExe = imgui.input_text("##ree_pak_gui_exe", toolsState.ree_pak_gui_exe)
+            if changedExe then
+                toolsState.ree_pak_gui_exe = tostring(newExe or "")
+            end
+
+            if imgui.button("Launch ree-pak-gui") then
+                local candidates = {}
+                if toolsState.ree_pak_gui_exe ~= nil and toolsState.ree_pak_gui_exe ~= "" then
+                    table.insert(candidates, toolsState.ree_pak_gui_exe)
+                end
+                table.insert(candidates, "ree-pak-gui/src-tauri/target/release/ree-pak-gui.exe")
+                table.insert(candidates, "ree-pak-gui/src-tauri/target/debug/ree-pak-gui.exe")
+                table.insert(candidates, "ree-pak-gui/target/release/ree-pak-gui.exe")
+                table.insert(candidates, "ree-pak-gui/target/debug/ree-pak-gui.exe")
+                table.insert(candidates, "ree-pak-gui/ree-pak-gui.exe")
+
+                local okLaunch, detail = tryLaunchExe(candidates)
+
+                if okLaunch then
+                    launchState.ree_pak_gui = string.format("Launched: %s", detail)
+                    if api.set_status ~= nil then
+                        api.set_status("ree_pak_gui", true, detail)
+                    end
+                else
+                    launchState.ree_pak_gui = string.format(
+                        "Launch failed: %s\nBuild it first (Tauri) or place the exe next to the game folder.",
+                        tostring(detail)
+                    )
+                    if api.set_status ~= nil then
+                        api.set_status("ree_pak_gui", false, detail)
+                    end
+                end
+            end
+
+            if api.draw_status ~= nil then
+                api.draw_status("ree_pak_gui")
+            end
+
+            if launchState.ree_pak_gui ~= nil then
+                imgui.text(launchState.ree_pak_gui)
+            end
+        end)
+
+        api.safe_tree("Diagnostics", function()
             local lastError = api._last_error
 
             local tools = rawget(_G, "mhws_tools")

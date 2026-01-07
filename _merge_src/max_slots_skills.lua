@@ -11,11 +11,11 @@ local Core = require("_CatLib")
 local Imgui = require("_CatLib.imgui")
 
 local function safeCall(label, fn)
-    local ok, res = xpcall(fn, debug.traceback)
+    local ok, a, b = xpcall(fn, debug.traceback)
     if ok then
-        return true, res
+        return true, a, b
     end
-    return false, string.format("%s\n%s", tostring(label), tostring(res))
+    return false, string.format("%s\n%s", tostring(label), tostring(a))
 end
 
 local function safeUi(label, fn)
@@ -44,6 +44,30 @@ end
 
 local function forEachValue(values, fn)
     if values == nil then
+        return 0
+    end
+
+    -- REFramework managed arrays/lists typically expose get_size/get_Item.
+    if values.get_size ~= nil and values.get_Item ~= nil then
+        local okSize, size = pcall(function()
+            return values:get_size()
+        end)
+        if okSize and type(size) == "number" then
+            local count = 0
+            for i = 0, size - 1 do
+                local okItem, value = pcall(function()
+                    return values:get_Item(i)
+                end)
+                if okItem and value ~= nil then
+                    fn(value)
+                    count = count + 1
+                end
+            end
+            return count
+        end
+    end
+
+    if type(values) ~= "table" then
         return 0
     end
 
@@ -267,134 +291,135 @@ local function DrawMaxSlotsSkillsMenu()
     local api = _G.__MHWS_EDITOR_SUITE or {}
     _G.__MHWS_EDITOR_SUITE = api
 
-    api._max_slots_skills_state = api._max_slots_skills_state or { last = nil }
-    local state = api._max_slots_skills_state
+    local function setStatus(ok, msg)
+        if api.set_status ~= nil then
+            api.set_status("max_slots_skills", ok == true, msg)
+        else
+            api._max_slots_skills_state = api._max_slots_skills_state or { last = nil }
+            api._max_slots_skills_state.last = (ok and "OK: " or "ERR: ") .. tostring(msg)
+        end
+    end
+
+    local Tree = api.safe_tree or Imgui.Tree
 
     imgui.text("Applies preset edits to game data (in-memory).")
     imgui.text("Restart the game to revert to original values.")
 
-    Imgui.Tree("Weapons", function()
+    Tree("Weapons", function()
         safeUi("max_slots_skills: Weapons UI", function()
             if imgui.button("Apply Max Slots##MaxSlotsWeapons") then
-            local ok_call, res = safeCall("applyWeapons(maxSlots=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyWeapons(maxSlots=true)", function()
                 return applyWeapons(true, false)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
             imgui.same_line()
             if imgui.button("Apply Max Skills##MaxSkillsWeapons") then
-            local ok_call, res = safeCall("applyWeapons(maxSkills=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyWeapons(maxSkills=true)", function()
                 return applyWeapons(false, true)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
             imgui.same_line()
             if imgui.button("Apply Both##MaxBothWeapons") then
-            local ok_call, res = safeCall("applyWeapons(maxSlots=true,maxSkills=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyWeapons(maxSlots=true,maxSkills=true)", function()
                 return applyWeapons(true, true)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
         end)
     end)
 
-    Imgui.Tree("Armors", function()
+    Tree("Armors", function()
         safeUi("max_slots_skills: Armors UI", function()
             if imgui.button("Apply Max Slots##MaxSlotsArmors") then
-            local ok_call, res = safeCall("applyArmors(maxSlots=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyArmors(maxSlots=true)", function()
                 return applyArmors(true, false)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
             imgui.same_line()
             if imgui.button("Apply Max Skills##MaxSkillsArmors") then
-            local ok_call, res = safeCall("applyArmors(maxSkills=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyArmors(maxSkills=true)", function()
                 return applyArmors(false, true)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
             imgui.same_line()
             if imgui.button("Apply Both##MaxBothArmors") then
-            local ok_call, res = safeCall("applyArmors(maxSlots=true,maxSkills=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyArmors(maxSlots=true,maxSkills=true)", function()
                 return applyArmors(true, true)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
         end)
     end)
 
-    Imgui.Tree("Talismans (Generated)", function()
+    Tree("Talismans (Generated)", function()
         safeUi("max_slots_skills: Talismans UI", function()
             if imgui.button("Apply Max Slots##MaxSlotsTalismans") then
-            local ok_call, res = safeCall("applyTalismans(maxSlots=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyTalismans(maxSlots=true)", function()
                 return applyTalismans(true, false)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
             imgui.same_line()
             if imgui.button("Apply Max Skills##MaxSkillsTalismans") then
-            local ok_call, res = safeCall("applyTalismans(maxSkills=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyTalismans(maxSkills=true)", function()
                 return applyTalismans(false, true)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
             imgui.same_line()
             if imgui.button("Apply Both##MaxBothTalismans") then
-            local ok_call, res = safeCall("applyTalismans(maxSlots=true,maxSkills=true)", function()
+            local ok_call, ok_apply, msg = safeCall("applyTalismans(maxSlots=true,maxSkills=true)", function()
                 return applyTalismans(true, true)
             end)
             if ok_call then
-                local ok_apply, msg = res
-                state.last = (ok_apply and "OK: " or "ERR: ") .. tostring(msg)
+                setStatus(ok_apply, msg)
             else
-                state.last = "ERR: " .. tostring(res)
+                setStatus(false, ok_apply)
             end
             end
         end)
     end)
 
-    if state.last ~= nil then
-        imgui.text_wrapped(state.last)
+    if api.draw_status ~= nil then
+        api.draw_status("max_slots_skills")
+    elseif api._max_slots_skills_state ~= nil and api._max_slots_skills_state.last ~= nil then
+        imgui.text_wrapped(api._max_slots_skills_state.last)
     end
 
     return false

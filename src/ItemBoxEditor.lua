@@ -1042,31 +1042,41 @@ local function drawItemBoxEditorTree()
     local itemWindowChanged = false
 
     if imgui.tree_node("Item Box Editor") then
-        if isLoadLanguage and not isInitError then
-            imgui.text_colored(i18n.modFreeTips, TIPS_COLOR)
-            imgui.begin_disabled(not isLoadLanguage)
-            mainWindowChanged, mainWindowState = imgui.checkbox(i18n.openMainWindow, mainWindowState)
-            if mainWindowChanged then
-                userConfig.mainWindowOpen = mainWindowState
-                saveUserConfigJson(USER_CONFIG_PATH)
+        local ok, err = xpcall(function()
+            if isLoadLanguage and not isInitError then
+                imgui.text_colored(i18n.modFreeTips, TIPS_COLOR)
+                imgui.begin_disabled(not isLoadLanguage)
+                mainWindowChanged, mainWindowState = imgui.checkbox(i18n.openMainWindow, mainWindowState)
+                if mainWindowChanged then
+                    userConfig.mainWindowOpen = mainWindowState
+                    saveUserConfigJson(USER_CONFIG_PATH)
+                end
+                itemWindowChanged, itemWindowState = imgui.checkbox(i18n.openItemTableWindow, itemWindowState)
+                if itemWindowChanged then
+                    userConfig.itemWindowOpen = itemWindowState
+                    saveUserConfigJson(USER_CONFIG_PATH)
+                end
+                if imgui.button(i18n.aboutWindowsTitle, SMALL_BTN) then
+                    aboutWindowState = not aboutWindowState
+                    userConfig.aboutWindowOpen = aboutWindowState
+                    saveUserConfigJson(USER_CONFIG_PATH)
+                end
+                imgui.end_disabled()
+            elseif not isLoadLanguage and not isInitError then
+                imgui.text_colored("[Item Box Editor] Mod Initializing...", TIPS_COLOR)
+            else
+                imgui.text_colored("[Item Box Editor] Mod Initialization Error", ERROR_COLOR)
+                imgui.text_colored("[Item Box Editor] " .. initErrorMsg, ERROR_COLOR)
             end
-            itemWindowChanged, itemWindowState = imgui.checkbox(i18n.openItemTableWindow, itemWindowState)
-            if itemWindowChanged then
-                userConfig.itemWindowOpen = itemWindowState
-                saveUserConfigJson(USER_CONFIG_PATH)
+        end, debug.traceback)
+
+        if not ok then
+            local api = rawget(_G, "__MHWS_EDITOR_SUITE")
+            if api ~= nil and api.record_error ~= nil then
+                api.record_error("ItemBoxEditor:drawItemBoxEditorTree", err)
             end
-            if imgui.button(i18n.aboutWindowsTitle, SMALL_BTN) then
-                aboutWindowState = not aboutWindowState
-                userConfig.aboutWindowOpen = aboutWindowState
-                saveUserConfigJson(USER_CONFIG_PATH)
-            end
-            imgui.end_disabled()
-        elseif not isLoadLanguage and not isInitError then
-            imgui.text_colored("[Item Box Editor] Mod Initializing...", TIPS_COLOR)
-        else
-            imgui.text_colored("[Item Box Editor] Mod Initialization Error", ERROR_COLOR)
-            imgui.text_colored("[Item Box Editor] " .. initErrorMsg, ERROR_COLOR)
         end
+
         imgui.tree_pop()
     end
 end

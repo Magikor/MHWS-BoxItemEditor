@@ -325,7 +325,9 @@ function _M.InspectWeaponType(wpType)
     end
 
     local configChanged = false
-    Imgui.Tree(Core.GetWeaponTypeName(wpType), function ()
+    local api = rawget(_G, "__MHWS_EDITOR_SUITE") or {}
+    local Tree = api.safe_tree or Imgui.Tree
+    Tree(Core.GetWeaponTypeName(wpType), function ()
         Core.ForEach(values, function (weaponData, i)
             local changed = _M.InspectWeaponData(weaponData, i, wpType)
             configChanged = configChanged or changed

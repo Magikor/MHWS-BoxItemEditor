@@ -130,6 +130,9 @@ local function DrawWeaponArmorEditorMenu()
 	local configChanged = false
     local changed = false
 
+    local api = rawget(_G, "__MHWS_EDITOR_SUITE") or {}
+    local Tree = api.safe_tree or Imgui.Tree
+
     local mgr = Core.GetVariousDataManager()
     if mgr == nil then
         imgui.text("Game not inited yet...")
@@ -145,7 +148,7 @@ local function DrawWeaponArmorEditorMenu()
     }
     local ui = EditorConf.Config.UI
 
-    Imgui.Tree("UI Filters", function()
+    Tree("UI Filters", function()
         imgui.push_item_width(260)
         changed, ui.weaponFilter = imgui.input_text("Search Weapons (name/id)##WeaponFilter", ui.weaponFilter)
         imgui.pop_item_width()
@@ -171,7 +174,7 @@ local function DrawWeaponArmorEditorMenu()
         configChanged = configChanged or changed
     end)
 
-    Imgui.Tree("Clear Data", function ()
+    Tree("Clear Data", function ()
         Imgui.Button("Clear Weapon Data", function ()
             EditorConf.ClearWeaponData()
             Weapon.ApplyModConfig()
@@ -185,7 +188,7 @@ local function DrawWeaponArmorEditorMenu()
         end)
     end)
 
-    Imgui.Tree("Weapons", function ()
+    Tree("Weapons", function ()
         Imgui.Button("Apply", function ()
             Weapon.ApplyModConfig()
         end)
@@ -193,18 +196,18 @@ local function DrawWeaponArmorEditorMenu()
         --     Weapon.RestoreAll()
         -- end)
 
-        Imgui.Tree("Global Settings", function ()
+        Tree("Global Settings", function ()
             imgui.text("If Override Value > 0, Final Value = Override Value")
             imgui.text("otherwise, Final Value = Origin Value * (Multiplier + 1) + Adder")
-            Imgui.Tree("Adder", function ()
+            Tree("Adder", function ()
                 changed, mod.Config.WeaponGlobalConfig.Adder = Editor.WeaponConfigGlobalAdderEditor(mod.Config.WeaponGlobalConfig.Adder)
                 configChanged = configChanged or changed
             end)
-            Imgui.Tree("Multiplier", function ()
+            Tree("Multiplier", function ()
                 changed, mod.Config.WeaponGlobalConfig.Multiplier = Editor.WeaponConfigGlobalMultiplierEditor(mod.Config.WeaponGlobalConfig.Multiplier)
                 configChanged = configChanged or changed
             end)
-            Imgui.Tree("Override Value", function ()
+            Tree("Override Value", function ()
                 changed, EditorConf.Config.WeaponGlobalConfig.Override = Editor.WeaponConfigGlobalOverrideEditor(mod.Config.WeaponGlobalConfig.Override)
                 configChanged = configChanged or changed
             end)
@@ -217,7 +220,7 @@ local function DrawWeaponArmorEditorMenu()
         end
     end)
 
-    Imgui.Tree("Armors", function ()
+    Tree("Armors", function ()
         InitArmorSeriesName()
 
         Imgui.Button("Apply", function ()
@@ -228,18 +231,18 @@ local function DrawWeaponArmorEditorMenu()
         --     Armor.RestoreAll()
         -- end)
 
-        Imgui.Tree("Global Settings", function ()
+        Tree("Global Settings", function ()
             imgui.text("If Override Value > 0, Final Value = Override Value")
             imgui.text("otherwise, Final Value = Origin Value * (Multiplier + 1) + Adder")
-            Imgui.Tree("Adder", function ()
+            Tree("Adder", function ()
                 changed, mod.Config.ArmorGlobalConfig.Adder = Editor.ArmorConfigGlobalAdderEditor(mod.Config.ArmorGlobalConfig.Adder)
                 configChanged = configChanged or changed
             end)
-            Imgui.Tree("Multiplier", function ()
+            Tree("Multiplier", function ()
                 changed, mod.Config.ArmorGlobalConfig.Multiplier = Editor.ArmorConfigGlobalMultiplierEditor(mod.Config.ArmorGlobalConfig.Multiplier)
                 configChanged = configChanged or changed
             end)
-            Imgui.Tree("Override Value", function ()
+            Tree("Override Value", function ()
                 changed, mod.Config.ArmorGlobalConfig.Override = Editor.ArmorConfigGlobalOverrideEditor(mod.Config.ArmorGlobalConfig.Override)
                 configChanged = configChanged or changed
             end)
@@ -261,7 +264,7 @@ local function DrawWeaponArmorEditorMenu()
                     return
                 end
 
-                Imgui.Tree(string.format("[%d] %s", name.Index, name.Name), function ()
+                Tree(string.format("[%d] %s", name.Index, name.Name), function ()
                     changed = Editor.InspectArmorData(armorSet:get_Helm())
                     configChanged = configChanged or changed
                     changed = Editor.InspectArmorData(armorSet:get_Chest())
