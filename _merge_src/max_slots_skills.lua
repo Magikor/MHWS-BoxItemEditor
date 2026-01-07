@@ -18,6 +18,15 @@ local function safeCall(label, fn)
     return false, string.format("%s\n%s", tostring(label), tostring(res))
 end
 
+local function safeUi(label, fn)
+    local ok, err = xpcall(fn, debug.traceback)
+    if not ok then
+        if log ~= nil and log.error ~= nil then
+            log.error(tostring(label) .. "\n" .. tostring(err))
+        end
+    end
+end
+
 local function getVariousDataManager()
     if Core ~= nil and Core.GetVariousDataManager ~= nil then
         local mgr = Core.GetVariousDataManager()
@@ -265,7 +274,8 @@ local function DrawMaxSlotsSkillsMenu()
     imgui.text("Restart the game to revert to original values.")
 
     Imgui.Tree("Weapons", function()
-        if imgui.button("Apply Max Slots##MaxSlotsWeapons") then
+        safeUi("max_slots_skills: Weapons UI", function()
+            if imgui.button("Apply Max Slots##MaxSlotsWeapons") then
             local ok_call, res = safeCall("applyWeapons(maxSlots=true)", function()
                 return applyWeapons(true, false)
             end)
@@ -275,9 +285,9 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
-        imgui.same_line()
-        if imgui.button("Apply Max Skills##MaxSkillsWeapons") then
+            end
+            imgui.same_line()
+            if imgui.button("Apply Max Skills##MaxSkillsWeapons") then
             local ok_call, res = safeCall("applyWeapons(maxSkills=true)", function()
                 return applyWeapons(false, true)
             end)
@@ -287,9 +297,9 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
-        imgui.same_line()
-        if imgui.button("Apply Both##MaxBothWeapons") then
+            end
+            imgui.same_line()
+            if imgui.button("Apply Both##MaxBothWeapons") then
             local ok_call, res = safeCall("applyWeapons(maxSlots=true,maxSkills=true)", function()
                 return applyWeapons(true, true)
             end)
@@ -299,11 +309,13 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
+            end
+        end)
     end)
 
     Imgui.Tree("Armors", function()
-        if imgui.button("Apply Max Slots##MaxSlotsArmors") then
+        safeUi("max_slots_skills: Armors UI", function()
+            if imgui.button("Apply Max Slots##MaxSlotsArmors") then
             local ok_call, res = safeCall("applyArmors(maxSlots=true)", function()
                 return applyArmors(true, false)
             end)
@@ -313,9 +325,9 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
-        imgui.same_line()
-        if imgui.button("Apply Max Skills##MaxSkillsArmors") then
+            end
+            imgui.same_line()
+            if imgui.button("Apply Max Skills##MaxSkillsArmors") then
             local ok_call, res = safeCall("applyArmors(maxSkills=true)", function()
                 return applyArmors(false, true)
             end)
@@ -325,9 +337,9 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
-        imgui.same_line()
-        if imgui.button("Apply Both##MaxBothArmors") then
+            end
+            imgui.same_line()
+            if imgui.button("Apply Both##MaxBothArmors") then
             local ok_call, res = safeCall("applyArmors(maxSlots=true,maxSkills=true)", function()
                 return applyArmors(true, true)
             end)
@@ -337,11 +349,13 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
+            end
+        end)
     end)
 
     Imgui.Tree("Talismans (Generated)", function()
-        if imgui.button("Apply Max Slots##MaxSlotsTalismans") then
+        safeUi("max_slots_skills: Talismans UI", function()
+            if imgui.button("Apply Max Slots##MaxSlotsTalismans") then
             local ok_call, res = safeCall("applyTalismans(maxSlots=true)", function()
                 return applyTalismans(true, false)
             end)
@@ -351,9 +365,9 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
-        imgui.same_line()
-        if imgui.button("Apply Max Skills##MaxSkillsTalismans") then
+            end
+            imgui.same_line()
+            if imgui.button("Apply Max Skills##MaxSkillsTalismans") then
             local ok_call, res = safeCall("applyTalismans(maxSkills=true)", function()
                 return applyTalismans(false, true)
             end)
@@ -363,9 +377,9 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
-        imgui.same_line()
-        if imgui.button("Apply Both##MaxBothTalismans") then
+            end
+            imgui.same_line()
+            if imgui.button("Apply Both##MaxBothTalismans") then
             local ok_call, res = safeCall("applyTalismans(maxSlots=true,maxSkills=true)", function()
                 return applyTalismans(true, true)
             end)
@@ -375,7 +389,8 @@ local function DrawMaxSlotsSkillsMenu()
             else
                 state.last = "ERR: " .. tostring(res)
             end
-        end
+            end
+        end)
     end)
 
     if state.last ~= nil then

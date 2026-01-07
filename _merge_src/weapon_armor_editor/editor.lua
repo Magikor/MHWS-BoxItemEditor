@@ -297,12 +297,20 @@ function _M.InspectWeaponData(data, arrIdx, wpType)
         imgui.text(" Custom")
     end
     if open then
-        changed, conf = _M.WeaponConfEditor(conf, false, wpType)
+        local ok, err = xpcall(function()
+            changed, conf = _M.WeaponConfEditor(conf, false, wpType)
 
-        if changed then
-            EditorConf.Config.Weapons[wpTypeStr][indexStr] = conf
+            if changed then
+                EditorConf.Config.Weapons[wpTypeStr][indexStr] = conf
+            end
+        end, debug.traceback)
+
+        if not ok then
+            if log ~= nil and log.error ~= nil then
+                log.error("Weapon UI error: " .. tostring(err))
+            end
         end
-        
+
         imgui.tree_pop()
     end
 
@@ -488,10 +496,18 @@ function _M.InspectArmorData(data)
         imgui.text(" Custom")
     end
     if open then
-        changed, conf = _M.ArmorConfEditor(conf)
+        local ok, err = xpcall(function()
+            changed, conf = _M.ArmorConfEditor(conf)
 
-        if changed then
-            EditorConf.Config.Armors[indexStr] = conf
+            if changed then
+                EditorConf.Config.Armors[indexStr] = conf
+            end
+        end, debug.traceback)
+
+        if not ok then
+            if log ~= nil and log.error ~= nil then
+                log.error("Armor UI error: " .. tostring(err))
+            end
         end
 
         imgui.tree_pop()
